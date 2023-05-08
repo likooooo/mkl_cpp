@@ -1,4 +1,5 @@
 #include "mkl.hpp"
+#include "simd.hpp"
 #include <memory>
 #include <algorithm>
 #include <tuple>
@@ -45,7 +46,7 @@ void constexpr_construct_test1()
         constexpr T m;
         static_assert(nullptr == m.begin());
         static_assert(nullptr == m.end());
-        static_assert(0 == std::accumulate(m.begin(), m.end(), 0));
+        static_assert(0 == std::accumulate(m.begin(), m.end(), 0.0));
         static_assert(0 == m.buffer_size());
     }
      {
@@ -71,6 +72,7 @@ void constexpr_construct_test1()
 }
 int main()
 {
+    test();
     constexpr_construct_test1<matrix<int, 3>>();
     constexpr_construct_test1<matrix1d>();
     constexpr_construct_test1<matrix2d>();
