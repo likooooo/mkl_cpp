@@ -87,3 +87,16 @@ int main()
     return 0;
 }
 
+
+template<class T>
+T func(T a, T b);
+template<>
+int func<int>(int a, int b) { return a + b; }
+template<class T>
+void func_wrapper()
+{
+    if constexpr (func_if_without_link_error<T>())
+    {
+        func<T>(1, 2);
+    }
+}

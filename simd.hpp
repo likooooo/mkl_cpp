@@ -12,8 +12,9 @@
 #include <algorithm>
 #include <iostream>
 #include <typeinfo>
+#include <type_traits>
 
-#ifdef _MSC_VER_ 
+#ifdef _MSC_VER
 #   define FORCE_INLINE __forceinline
 #elif defined __GNUC__ 
 #   define FORCE_INLINE __inline__ __attribute__((always_inline))
@@ -51,48 +52,39 @@
 
 #define REGIST_SIMD_AVX(Family) _REGIST_SIMD_AVX(Family)
 #define _REGIST_SIMD_AVX(Family)\
-    REGIST_SIMD(float, _ps, _ps, Family, Family##_)\
-    REGIST_SIMD(double, _pd, _pd, Family, Family##_)\
-    REGIST_SIMD(int8_t, _epi8, _si##Family, Family, Family##_)\
-    REGIST_SIMD(int16_t, _epi16, _si##Family, Family, Family##_)\
-    REGIST_SIMD(int32_t, _epi32, _si##Family, Family, Family##_)\
-    REGIST_SIMD(int64_t, _epi64, _si##Family, Family, Family##_) \
-    REGIST_SIMD(uint8_t, s_epu8, _si##Family, Family, Family##_)\
-    REGIST_SIMD(uint16_t, s_epu16, _si##Family, Family, Family##_)
+    REGIST_SIMD_LOAD(float, _ps, Family, Family##_)\
+    REGIST_SIMD_LOAD(double, _pd, Family, Family##_)\
+    REGIST_SIMD_LOAD(int8_t, _si##Family, Family, Family##_)\
+    REGIST_SIMD_LOAD(int16_t, _si##Family, Family, Family##_)\
+    REGIST_SIMD_LOAD(int32_t, _si##Family, Family, Family##_)\
+    REGIST_SIMD_LOAD(int64_t, _si##Family, Family, Family##_) \
+    REGIST_SIMD_LOAD(uint8_t, _si##Family, Family, Family##_)\
+    REGIST_SIMD_LOAD(uint16_t, _si##Family, Family, Family##_)\
+    REGIST_SIMD_ADD(float, _ps, Family, Family##_)\
+    REGIST_SIMD_ADD(double, _pd, Family, Family##_)
 
 #define REGIST_SIMD_SSE(Family) _REGIST_SIMD_SSE(Family)
 #define _REGIST_SIMD_SSE(Family)\
-    REGIST_SIMD(float, _ps, _ps, Family, _)\
-    REGIST_SIMD(double, _pd, _pd, Family, _)\
-    REGIST_SIMD(int8_t, _epi8, _si##Family, Family, _)\
-    REGIST_SIMD(int16_t, _epi16, _si##Family, Family, _)\
-    REGIST_SIMD(int32_t, _epi32, _si##Family, Family, _)\
-    REGIST_SIMD(int64_t, _epi64, _si##Family, Family, _)\
-    REGIST_SIMD(uint8_t, s_epu8, _si##Family, Family, _)\
-    REGIST_SIMD(uint16_t, s_epu16, _si##Family, Family, _)
-/**
- *  * @brief SIMD api wrapper 
- *   * struct simd_cal_op<T, Family>{
- *    *      _mm"bit_count"_"operator"_"suffix"
- *     * }
- *      * 
- *       */
-#define REGIST_SIMD(T, suffix, suffix1, Family, family)\
-template<> struct simd_cal_op<T, Family>{\
-    FORCE_INLINE static auto load(T const * mem_addr){return _mm##family##load##suffix1(reinterpret_cast<simd_type_in<T, Family> const*>(mem_addr));}\
-    FORCE_INLINE static auto add(simd_type_out<T, Family> a, simd_type_out<T, Family> b ){return _mm##family##add##suffix(a, b);}\
-    FORCE_INLINE static auto abs(simd_type_out<T, Family> a ){return _mm##family##abs##suffix(a);}\
-};
+    REGIST_SIMD_LOAD(float, _ps, Family, _)\
+    REGIST_SIMD_LOAD(double, _pd, Family, _)\
+    REGIST_SIMD_LOAD(int8_t, _si##Family, Family, _)\
+    REGIST_SIMD_LOAD(int16_t, _si##Family, Family, _)\
+    REGIST_SIMD_LOAD(int32_t, _si##Family, Family, _)\
+    REGIST_SIMD_LOAD(int64_t, _si##Family, Family, _)\
+    REGIST_SIMD_LOAD(uint8_t, _si##Family, Family, _)\
+    REGIST_SIMD_LOAD(uint16_t, _si##Family, Family, _)\
+    REGIST_SIMD_ADD(float, _ps, Family, _)\
+    REGIST_SIMD_ADD(double, _pd, Family, _)
 
+/* regist simd load */
+#define REGIST_SIMD_LOAD(T, suffix, Family, family) template<> struct simd_load<T, Family>{\
+    FORCE_INLINE auto operator()(T const * mem_addr){return _mm##family##load##suffix(reinterpret_cast<simd_type_in<T, Family> const*>(mem_addr));}};
+#define REGIST_SIMD_ADD(T, suffix, Family, family) template<> struct simd_add<T, Family>{\
+    FORCE_INLINE auto operator()(simd_type_out<T, Family> a, simd_type_out<T, Family> b){return _mm##family##add##suffix(a, b);}};
+
+//FORCE_INLINE static auto abs(simd_type_out<T, Family> a) { return _mm##family##abs##suffix(a); }
 namespace simd_cpp
 {
-    /**
- *      * @brief SIMD allocator, align memory by simd_family 
- *           * 
- *                * @tparam T 
- *                     * @tparam simd_family 
- *                          * @tparam Alloc 
- *                               */
     template<class T, int simd_family = DEFAULT_SIMD_FAMILY, class Alloc = std::allocator<T>>
     struct simd_alloc
     {
@@ -116,12 +108,7 @@ namespace simd_cpp
             return  (n + simd_data_align - 1)  / simd_data_align * simd_data_align;
         }
     };
-    /**
- *      * @brief get data type by simd family 
- *           * 
- *                * @tparam T 
- *                     * @tparam family 
- *                          */
+
     template<class T, int family = DEFAULT_SIMD_FAMILY> struct simd_traits;
     DECLARE_SIMD_TYPE_TRAITS(SIMD_FAMILY_SSE);
     DECLARE_SIMD_TYPE_TRAITS(SIMD_FAMILY_AVX);
@@ -130,15 +117,58 @@ namespace simd_cpp
     using simd_type_out = typename simd_traits<T, simd_family>::simd_type;
     template<class T, int simd_family = DEFAULT_SIMD_FAMILY>
     using simd_type_in = typename simd_traits<T, simd_family>::simd_type_in;
-    /**
- *      * @brief SIMD API wrapper
- *           * 
- *                * @tparam T 
- *                     * @tparam simd_family 
- *                          */
-    template<class T, int simd_family = DEFAULT_SIMD_FAMILY> struct simd_cal_op;
+
+    template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_load;
+    template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_add;
     REGIST_SIMD_SSE(SIMD_FAMILY_SSE);
     REGIST_SIMD_AVX(SIMD_FAMILY_AVX);
+}
+//template<class T, class = decltype(&T::operator())>
+//struct is_api_registed;
+//template<class T>
+//struct is_api_registed<T, decltype(&T::operator())> : std::false_type {};
+//template<class T>
+//struct is_api_registed<T, void> : std::true_type {};
+
+
+
+//// Âú×ãÅÐ¶ÏÆ¥Åä
+//template<typename F, typename... Args,
+//    typename = decltype(std::declval<F>()(std::declval<Args>()...))> // ·µ»ØÖµÅÐ¶Ï
+//constexpr std::true_type IsValidImpl(std::nullptr_t) {
+//    return std::true_type();
+//}
+//
+//// ²»Âú×ãÅÐ¶ÏÆ¥Åä
+//template<typename F, typename... Args>
+//constexpr std::false_type IsValidImpl(...) {
+//    return std::false_type();
+//}
+//template<class T>
+//constexpr auto is_api_registed = []() {
+//    return [](auto&&... Args) {
+//        // µ÷ÓÃ IsValidImpl ½øÐÐÅÐ¶Ï
+//        return IsValidImpl<T>(nullptr);
+//    };
+//};
+
+
+//using is_api_registed = decltype(IsValidImpl<T>());
+template<class test_type = double>
+auto simd_load_test()
+{
+    using namespace simd_cpp;
+    constexpr int buf_len = simd_alloc<test_type>::simd_data_align;
+
+    printf("begin simd load test : %s, %d\n", typeid(test_type).name(), buf_len);
+    std::array<test_type, buf_len> buf = { 0 };
+    for (int i = 0; i < buf_len; i++)
+    {
+        buf[i] = static_cast<test_type>(i);
+    }
+    simd_type_out<test_type> a = simd_load<test_type>()(buf.data());
+    assert(0 == memcmp(&a, buf.data(), sizeof(a)));
+    return buf;
 }
 
 
@@ -146,19 +176,16 @@ template<class test_type = double>
 void simd_test()
 {
     using namespace simd_cpp;
-    constexpr int buf_len = simd_alloc<test_type>::simd_data_align;
+    
+    auto buf = simd_load_test<test_type>();
+    mkl_cpp::matrix<test_type, 2> m(buf.data(), {std::size(buf), 1});
 
-    printf("begin simd test : %s, %d\n", typeid(test_type).name(), buf_len);
-    test_type buf[buf_len] = {0};
-    for(int i = 0; i < buf_len; i++)
-    {
-        buf[i] = i;
-    }
-    mkl_cpp::matrix<test_type, 2> m(buf, {buf_len, 1});
-
-    simd_type_out<test_type> a = simd_cal_op<test_type>::load(m.p);
-    *reinterpret_cast<simd_type_out<test_type>*>(m.p) = simd_cal_op<test_type>::add(a, a);
-
+    //std::enable_if_t<>
+    //if constexpr(std::is_same<void,>)
+    simd_type_out<test_type> a = simd_load<test_type>()(m.p);
+    //*reinterpret_cast<simd_type_out<test_type>*>(m.p) = simd_add<test_type>()(a, a);
+    //printf("%s\n", typeid(decltype(simd_add<test_type>())).name());
+    //printf("simd_add : %s\n", is_api_registed<simd_add<test_type>>::value ? "registed" : "unregisted");
     for (auto n : m)
     {
         std::cout << static_cast<double>(n) << " ";
