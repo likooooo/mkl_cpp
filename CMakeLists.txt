@@ -5,6 +5,9 @@ project(oneMKL_Example)
 find_package(MKL CONFIG REQUIRED)
 message(STATUS "${MKL_IMPORTED_TARGETS}") #Provides available list of targets based on input
 
+# add_compile_options(-mfma -mavx2 -mavx512f)
+add_compile_options(-mavx2 )
+
 add_executable(myapp app.cpp)
 target_compile_options(myapp PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_COMPILE_OPTIONS>)
 target_include_directories(myapp PUBLIC $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>)
@@ -14,3 +17,4 @@ add_test(NAME mytest COMMAND myapp)
 if(MKL_ENV)
   set_tests_properties(mytest PROPERTIES ENVIRONMENT "${MKL_ENV}")
 endif()
+

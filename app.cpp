@@ -72,10 +72,18 @@ void constexpr_construct_test1()
 }
 int main()
 {
-    test();
+    simd_test<int8_t>();
+    simd_test<int16_t>();
+    simd_test<int32_t>();
+    simd_test<int64_t>();
+    simd_test<uint8_t>();
+    simd_test<uint16_t>();
+    simd_test<float>();
+    simd_test<double>();
     constexpr_construct_test1<matrix<int, 3>>();
     constexpr_construct_test1<matrix1d>();
     constexpr_construct_test1<matrix2d>();
     constexpr_construct_test1<matrix3d>();
     return 0;
 }
+
