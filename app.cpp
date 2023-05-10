@@ -72,31 +72,29 @@ void constexpr_construct_test1()
 }
 int main()
 {
-    simd_test<int8_t>();
-    simd_test<int16_t>();
-    simd_test<int32_t>();
-    simd_test<int64_t>();
-    simd_test<uint8_t>();
-    simd_test<uint16_t>();
-    simd_test<float>();
-    simd_test<double>();
+    simd_test<int8_t, SIMD_FAMILY_AVX>();
+    simd_test<int16_t, SIMD_FAMILY_AVX>();
+    simd_test<int32_t, SIMD_FAMILY_AVX>();
+    simd_test<int64_t, SIMD_FAMILY_AVX>();
+    simd_test<uint8_t, SIMD_FAMILY_AVX>();
+    simd_test<uint16_t, SIMD_FAMILY_AVX>();
+    simd_test<uint32_t, SIMD_FAMILY_AVX>();
+    simd_test<float, SIMD_FAMILY_AVX>();
+    simd_test<double, SIMD_FAMILY_AVX>();
+    printf("\n------------------------------------------------------------------\n\n");
+    simd_test<int8_t, SIMD_FAMILY_SSE>();
+    simd_test<int16_t, SIMD_FAMILY_SSE>();
+    simd_test<int32_t, SIMD_FAMILY_SSE>();
+    simd_test<int64_t, SIMD_FAMILY_SSE>();
+    simd_test<uint8_t, SIMD_FAMILY_SSE>();
+    simd_test<uint16_t, SIMD_FAMILY_SSE>();
+    simd_test<uint32_t, SIMD_FAMILY_SSE>();
+    simd_test<float, SIMD_FAMILY_SSE>();
+    simd_test<double, SIMD_FAMILY_SSE>();
+    return 0;
     constexpr_construct_test1<matrix<int, 3>>();
     constexpr_construct_test1<matrix1d>();
     constexpr_construct_test1<matrix2d>();
     constexpr_construct_test1<matrix3d>();
     return 0;
-}
-
-
-template<class T>
-T func(T a, T b);
-template<>
-int func<int>(int a, int b) { return a + b; }
-template<class T>
-void func_wrapper()
-{
-    if constexpr (func_if_without_link_error<T>())
-    {
-        func<T>(1, 2);
-    }
 }
