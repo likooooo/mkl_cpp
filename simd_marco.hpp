@@ -42,6 +42,12 @@
     REGIST_SIMD_LOAD(uint16_t, _si##Family, Family, Family##_)\
     REGIST_SIMD_LOAD(uint32_t, _si##Family, Family, Family##_)\
     \
+    REGIST_SIMD_SET(float, _ps, Family, Family##_)\
+    REGIST_SIMD_SET(double, _pd, Family, Family##_)\
+    REGIST_SIMD_SET(int8_t, _epi8, Family, Family##_)\
+    REGIST_SIMD_SET(int16_t, _epi16, Family, Family##_)\
+    REGIST_SIMD_SET(int32_t, _epi32, Family, Family##_)\
+    \
     REGIST_SIMD_GATHER(float, _ps, Family, Family##_)\
     REGIST_SIMD_GATHER(double, _pd, Family, Family##_)\
     REGIST_SIMD_GATHER(int32_t, _epi32, Family, Family##_)\
@@ -84,6 +90,12 @@
     REGIST_SIMD_LOAD(uint16_t, _si##Family, Family, _)\
     REGIST_SIMD_LOAD(uint32_t, _si##Family, Family, _)\
     \
+    REGIST_SIMD_SET(float, _ps, Family, _)\
+    REGIST_SIMD_SET(double, _pd, Family, _)\
+    REGIST_SIMD_SET(int8_t, _epi8, Family, _)\
+    REGIST_SIMD_SET(int16_t, _epi16, Family, _)\
+    REGIST_SIMD_SET(int32_t, _epi32, Family, _)\
+    \
     REGIST_SIMD_GATHER(float, _ps, Family, _)\
     REGIST_SIMD_GATHER(double, _pd, Family, _)\
     REGIST_SIMD_GATHER(int32_t, _epi32, Family, _)\
@@ -119,6 +131,11 @@
 #define REGIST_SIMD_LOAD(T, suffix, Family, family) template<> struct simd_load<T, Family> : public std::true_type{\
     FORCE_INLINE auto operator()(T const * mem_addr){return _mm##family##load##suffix(reinterpret_cast<simd_type_in<T, Family> const*>(mem_addr));}};
 
+#define REGIST_SIMD_SET(T, suffix, Family, family) template<> struct simd_set<T, Family> : public std::true_type{\
+    template<class T1, class T2, class ...TPack>FORCE_INLINE auto operator()(const T1 arg1, const T2 arg2, const  TPack... args){return _mm##family##set##suffix(arg1, arg2, args...);}\
+    FORCE_INLINE auto operator()(const T arg){return _mm##family##set1##suffix(arg);}\
+};
+
 #define REGIST_SIMD_GATHER(T, suffix, Family, family) template<> struct simd_gather<T, Family> : public std::true_type{\
     FORCE_INLINE auto operator()(T const * base_addr, simd_index_type<int, T, Family> vindex, const int scala){return _mm##family##i32gather##suffix(base_addr, vindex, scala);}};
 
@@ -137,6 +154,7 @@
 namespace simd_cpp
 {
     template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_load : public std::false_type{};
+    template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_set : public std::false_type{};
     template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_gather : public std::false_type{};
     template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_scatter : public std::false_type{};
 

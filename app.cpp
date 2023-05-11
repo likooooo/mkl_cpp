@@ -81,7 +81,7 @@ int main()
     simd_test<uint32_t, SIMD_FAMILY_AVX>();
     simd_test<float, SIMD_FAMILY_AVX>();
     simd_test<double, SIMD_FAMILY_AVX>();
-    printf("\n------------------------------------------------------------------\n\n");
+    printf("##########################\n    * AVX -> SSE\n##########################\n\n");
     simd_test<int8_t, SIMD_FAMILY_SSE>();
     simd_test<int16_t, SIMD_FAMILY_SSE>();
     simd_test<int32_t, SIMD_FAMILY_SSE>();
