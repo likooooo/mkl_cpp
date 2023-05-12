@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #ifdef _MSC_VER
 #   define FORCE_INLINE __forceinline
 #elif defined __GNUC__ 
@@ -8,7 +10,6 @@
 #   error "unsupport plantform"
 #endif
 
-#define SIMD_FAMILY_MMX 64 /* unsupport type "SIMD_FAMILY_MMX" , it's too old. */ 
 #define SIMD_FAMILY_SSE 128
 #define SIMD_FAMILY_AVX 256
 #define SIMD_FAMILY_AVX_512 512
@@ -51,7 +52,6 @@
     REGIST_SIMD_GATHER(float, _ps, Family, Family##_)\
     REGIST_SIMD_GATHER(double, _pd, Family, Family##_)\
     REGIST_SIMD_GATHER(int32_t, _epi32, Family, Family##_)\
-    REGIST_SIMD_GATHER(int64_t, _epi64, Family, Family##_)\
     \
     REGIST_SIMD_ADD(float, _ps, Family, Family##_)\
     REGIST_SIMD_ADD(double, _pd, Family, Family##_)\
@@ -99,7 +99,6 @@
     REGIST_SIMD_GATHER(float, _ps, Family, _)\
     REGIST_SIMD_GATHER(double, _pd, Family, _)\
     REGIST_SIMD_GATHER(int32_t, _epi32, Family, _)\
-    REGIST_SIMD_GATHER(int64_t, _epi64, Family, _)\
     \
     REGIST_SIMD_ADD(float, _ps, Family, _)\
     REGIST_SIMD_ADD(double, _pd, Family, _)\
@@ -126,18 +125,24 @@
     REGIST_SIMD_DIV(float, _ps, Family, _)\
     REGIST_SIMD_DIV(double, _pd, Family, _)
 
-
+#define SIMD_API_NAME (prefix, suffix, api) _mm##prefix##api##suffix
 
 #define REGIST_SIMD_LOAD(T, suffix, Family, family) template<> struct simd_load<T, Family> : public std::true_type{\
     FORCE_INLINE auto operator()(T const * mem_addr){return _mm##family##load##suffix(reinterpret_cast<simd_type_in<T, Family> const*>(mem_addr));}};
 
 #define REGIST_SIMD_SET(T, suffix, Family, family) template<> struct simd_set<T, Family> : public std::true_type{\
-    template<class T1, class T2, class ...TPack>FORCE_INLINE auto operator()(const T1 arg1, const T2 arg2, const  TPack... args){return _mm##family##set##suffix(arg1, arg2, args...);}\
+    template<class ...TPack>FORCE_INLINE auto operator()(const T arg1, const T arg2, const  TPack... args){return _mm##family##set##suffix(arg1, arg2, args...);}\
     FORCE_INLINE auto operator()(const T arg){return _mm##family##set1##suffix(arg);}\
 };
 
-#define REGIST_SIMD_GATHER(T, suffix, Family, family) template<> struct simd_gather<T, Family> : public std::true_type{\
-    FORCE_INLINE auto operator()(T const * base_addr, simd_index_type<int, T, Family> vindex, const int scala){return _mm##family##i32gather##suffix(base_addr, vindex, scala);}};
+/* be careful : "_mm512_i32gather_?" input args is weird*/
+#define REGIST_SIMD_GATHER(T, suffix, Family, family)\
+    template<> struct simd_gather<T, Family> : public std::true_type{\
+    template<class T1, class T2>FORCE_INLINE auto operator()(T1 arg1, T2 arg2, const int scala){\
+        static_assert((std::is_same<typename std::remove_cv<T2>::type, typename std::remove_cv<T*>::type>::value && Family == SIMD_FAMILY_AVX_512) ||\
+                            (std::is_same<typename std::remove_cv<T1>::type, typename std::remove_cv<T*>::type>::value && Family < SIMD_FAMILY_AVX_512), "support intel ugly api !");\
+        return _mm##family##i32gather##suffix(arg1, arg2, scala);}\
+};
 
 #define REGIST_SIMD_ADD(T, suffix, Family, family) template<> struct simd_add<T, Family> : public std::true_type{\
     FORCE_INLINE auto operator()(simd_type_out<T, Family> a, simd_type_out<T, Family> b){return _mm##family##add##suffix(a, b);}};
@@ -164,4 +169,5 @@ namespace simd_cpp
     template<class T, int Family = DEFAULT_SIMD_FAMILY> struct simd_div : public std::false_type{};
 }
 
-    
+
+
